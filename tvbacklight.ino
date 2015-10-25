@@ -25,8 +25,8 @@ uint8_t * ledsRaw = (uint8_t *)leds;
 
 static const uint8_t magic[] = {
   'A','d','a'};
-#define MAGICSIZE  sizeof(magic)
-#define HEADERSIZE (MAGICSIZE + 3)
+#define MAGICSIZE  sizeof( magic )
+#define HEADERSIZE ( MAGICSIZE + 3 )
 
 #define MODE_HEADER 0
 #define MODE_DATA   2
@@ -38,9 +38,9 @@ static const unsigned long serialTimeout = 150000; // 150 seconds
 
 void setup()
 {
-  pinMode(GROUND_PIN, OUTPUT); 
-  digitalWrite(GROUND_PIN, LOW);
-  FastLED.addLeds<WS2812B, LED_PIN, GRB>(leds, NUM_LEDS);
+  pinMode( GROUND_PIN, OUTPUT ); 
+  digitalWrite( GROUND_PIN, LOW );
+  FastLED.addLeds<WS2812B, LED_PIN, GRB>( leds, NUM_LEDS );
 
   // Dirty trick: the circular buffer for serial data is 256 bytes,
   // and the "in" and "out" indices are unsigned 8-bit types -- this
@@ -49,7 +49,7 @@ void setup()
   // masking and/or conditional code every time one of these indices
   // needs to change, slowing things down tremendously.
   uint8_t
-    buffer[256],
+    buffer[ 256 ],
   indexIn       = 0,
   indexOut      = 0,
   mode          = MODE_HEADER,
@@ -67,11 +67,11 @@ void setup()
   t;
   int32_t outPos = 0;
 
-  Serial.begin(SPEED); // Teensy/32u4 disregards baud rate; is OK!
+  Serial.begin( SPEED ); // Teensy/32u4 disregards baud rate; is OK!
 
-  Serial.print("Ada\n"); // Send ACK string to host
+  Serial.print( "Ada\n" ); // Send ACK string to host
 
-    startTime    = micros();
+  startTime    = micros();
   lastByteTime = lastAckTime = millis();
 
   // loop() is avoided as even that small bit of function overhead
@@ -82,46 +82,46 @@ void setup()
     // Implementation is a simple finite-state machine.
     // Regardless of mode, check for serial input each time:
     t = millis();
-    if((bytesBuffered < 256) && ((c = Serial.read()) >= 0)) {
-      buffer[indexIn++] = c;
+    if( ( bytesBuffered < 256 ) && ( ( c = Serial.read() ) >= 0 ) ) {
+      buffer[ indexIn++ ] = c;
       bytesBuffered++;
       lastByteTime = lastAckTime = t; // Reset timeout counters
     } 
     else {
       // No data received.  If this persists, send an ACK packet
       // to host once every second to alert it to our presence.
-      if((t - lastAckTime) > 1000) {
-        Serial.print("Ada\n"); // Send ACK string to host
+      if( ( t - lastAckTime ) > 1000 ) {
+        Serial.print( "Ada\n" ); // Send ACK string to host
         lastAckTime = t; // Reset counter
       }
       // If no data received for an extended time, turn off all LEDs.
-      if((t - lastByteTime) > serialTimeout) {
-        memset(leds, 0,  NUM_LEDS * sizeof(struct CRGB)); //filling Led array by zeroes
+      if( ( t - lastByteTime ) > serialTimeout ) {
+        memset( leds, 0,  NUM_LEDS * sizeof( struct CRGB ) ); //filling Led array by zeroes
         FastLED.show();
         lastByteTime = t; // Reset counter
       }
     }
 
-    switch(mode) {
+    switch( mode ) {
 
     case MODE_HEADER:
 
       // In header-seeking mode.  Is there enough data to check?
-      if(bytesBuffered >= HEADERSIZE) {
+      if( bytesBuffered >= HEADERSIZE ) {
         // Indeed.  Check for a 'magic word' match.
-        for(i=0; (i<MAGICSIZE) && (buffer[indexOut++] == magic[i++]););
-        if(i == MAGICSIZE) {
+        for( i = 0; ( i < MAGICSIZE ) && ( buffer[ indexOut++ ] == magic[ i++ ] ); );
+        if( i == MAGICSIZE ) {
           // Magic word matches.  Now how about the checksum?
-          hi  = buffer[indexOut++];
-          lo  = buffer[indexOut++];
-          chk = buffer[indexOut++];
-          if(chk == (hi ^ lo ^ 0x55)) {
+          hi  = buffer[ indexOut++ ];
+          lo  = buffer[ indexOut++ ];
+          chk = buffer[ indexOut++ ];
+          if( chk == ( hi ^ lo ^ 0x55 ) ) {
             // Checksum looks valid.  Get 16-bit LED count, add 1
             // (# LEDs is always > 0) and multiply by 3 for R,G,B.
-            bytesRemaining = 3L * (256L * (long)hi + (long)lo + 1L);
+            bytesRemaining = 3L * ( 256L * ( long )hi + ( long )lo + 1L );
             bytesBuffered -= 3;
             outPos = 0;
-            memset(leds, 0,  NUM_LEDS * sizeof(struct CRGB));
+            memset( leds, 0,  NUM_LEDS * sizeof( struct CRGB ) );
             mode           = MODE_DATA; // Proceed to latch wait mode
           } 
           else {
@@ -135,10 +135,10 @@ void setup()
 
     case MODE_DATA:
 
-      if(bytesRemaining > 0) {
-        if(bytesBuffered > 0) {
-          if (outPos < sizeof(leds))
-            ledsRaw[outPos++] = buffer[indexOut++];   // Issue next byte
+      if( bytesRemaining > 0 ) {
+        if( bytesBuffered > 0 ) {
+          if ( outPos < sizeof( leds ) )
+            ledsRaw[ outPos++ ] = buffer[ indexOut++ ];   // Issue next byte
           bytesBuffered--;
           bytesRemaining--;
         }
